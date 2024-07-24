@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Roles</title>
+</head>
+<body>
+<h1>Manage Roles</h1>
+<form method="POST">
+    <label for="role_name">Role Name:</label>
+    <input type="text" id="role_name" name="role_name" required>
+    <br>
+    <label for="description">Description:</label>
+    <textarea id="description" name="description"></textarea>
+    <br>
+    <button type="submit">Create Role</button>
+</form>
+<h2>Existing Roles</h2>
+<ul>
+    {% for role in roles %}
+    <li>{{ role.role_name }} - {{ role.description }}</li>
+    {% endfor %}
+</ul>
+</body>
+</html>

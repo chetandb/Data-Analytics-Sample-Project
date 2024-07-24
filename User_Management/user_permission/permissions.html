@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Permissions</title>
+</head>
+<body>
+<h1>Manage Permissions</h1>
+<form method="POST">
+    <label for="permission_name">Permission Name:</label>
+    <input type="text" id="permission_name" name="permission_name" required>
+    <br>
+    <label for="description">Description:</label>
+    <textarea id="description" name="description"></textarea>
+    <br>
+    <button type="submit">Create Permission</button>
+</form>
+<h2>Existing Permissions</h2>
+<ul>
+    {% for permission in permissions %}
+    <li>{{ permission.permission_name }} - {{ permission.description }}</li>
+    {% endfor %}
+</ul>
+</body>
+</html>
