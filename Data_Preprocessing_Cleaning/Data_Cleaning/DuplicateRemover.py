@@ -1,5 +1,3 @@
-import pandas as pd
-
 class DuplicateRemover:
     def __init__(self, df):
         self.df = df

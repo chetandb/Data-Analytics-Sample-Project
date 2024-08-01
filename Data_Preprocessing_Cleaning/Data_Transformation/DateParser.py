@@ -1,5 +1,5 @@
 import pandas as pd
-import re
+
 
 class DateParser:
     def __init__(self, df, date_columns, date_formats=None):
