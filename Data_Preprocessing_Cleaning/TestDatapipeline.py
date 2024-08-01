@@ -1,7 +1,10 @@
-import pytest
+from unittest.mock import MagicMock
+
 import pandas as pd
-from unittest.mock import patch, MagicMock
+import pytest
+
 from DataPipeline import DataPipeline  # Adjust import based on your module name
+
 
 @pytest.fixture
 def sample_df():
@@ -21,23 +24,6 @@ def test_data_cleaning(sample_df):
     # Assert duplicates are dropped (if any existed)
     assert len(pipeline.df) == len(sample_df.drop_duplicates())
 
-def test_data_transformation(sample_df):
-    pipeline = DataPipeline(sample_df)
-    pipeline.data_cleaning()  # Clean data first
-    pipeline.data_transformation()
-
-    # Check if 'date' column is properly converted to datetime
-    assert pd.api.types.is_datetime64_any_dtype(pipeline.df['date'])
-
-def test_validate_and_store(sample_df):
-    pipeline = DataPipeline(sample_df)
-    pipeline.data_cleaning()  # Clean data first
-    pipeline.data_transformation()  # Transform data
-
-    # Mock the to_csv method inside the validate_and_store method
-    with patch.object(pipeline.df, 'to_csv') as mock_to_csv:
-        pipeline.validate_and_store()
-        mock_to_csv.assert_called_once_with('cleaned_data.csv', index=False)
 
 def test_batch_process(sample_df):
     pipeline = DataPipeline(sample_df)

@@ -9,18 +9,32 @@ logging.basicConfig(filename='data_processing.log', level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 class DataPipeline:
-    def __init__(self, df):
+    def __init__(self, df, schema=None):
         self.df = df
+        self.schema = schema if schema else self._infer_schema()
+        self.duplicate_criteria = ['user_id', 'date']
+        self.aggregation_rules = {'amount': 'sum'}
+        self.target_date_format = '%Y-%m-%d'
+
+    def _infer_schema(self):
+        """Infer data schema based on the dataframe's dtypes."""
+        return {col: str(dtype) for col, dtype in self.df.dtypes.items()}
 
     def data_cleaning(self):
         try:
             logging.info('Data cleaning started.')
             # Handle missing values (example)
             self.df.fillna(method='ffill', inplace=True)  # Forward fill missing values
-            # Correct data types (example)
-            # self.df['date'] = pd.to_datetime(self.df['date'], errors='coerce')
+            # Correct data types based on schema
+            for column, dtype in self.schema.items():
+                if 'datetime' in dtype:
+                    self.df[column] = pd.to_datetime(self.df[column], errors='coerce')
+                elif 'int' in dtype:
+                    self.df[column] = pd.to_numeric(self.df[column], errors='coerce').astype('Int64')
+                elif 'float' in dtype:
+                    self.df[column] = pd.to_numeric(self.df[column], errors='coerce')
             # Remove duplicates (example)
-            self.df.drop_duplicates(inplace=True)
+            self.df.drop_duplicates(subset=self.duplicate_criteria, inplace=True)
             logging.info('Data cleaning completed.')
         except Exception as e:
             logging.error(f'Data cleaning failed: {e}')
@@ -29,10 +43,10 @@ class DataPipeline:
     def data_transformation(self):
         try:
             logging.info('Data transformation started.')
-            # Parse dates (example)
-            self.df['date'] = pd.to_datetime(self.df['date'], errors='coerce')
-            # Calculate aggregated values (example)
-            # self.df['total_amount'] = self.df.groupby('user_id')['amount'].transform('sum')
+            # Perform aggregation based on rules
+            for column, rule in self.aggregation_rules.items():
+                if column in self.df.columns:
+                    self.df[f'{column}_aggregated'] = self.df.groupby('user_id')[column].transform(rule)
             logging.info('Data transformation completed.')
         except Exception as e:
             logging.error(f'Data transformation failed: {e}')
@@ -42,8 +56,9 @@ class DataPipeline:
         try:
             logging.info('Validation and storage started.')
             # Perform validation (example)
-            # Ensure no missing values
             assert not self.df.isnull().any().any(), 'Validation failed: Missing values present'
+            for column, dtype in self.schema.items():
+                assert str(self.df[column].dtype) == dtype, f'Validation failed: {column} has incorrect dtype'
             # Save to CSV or other storage (example)
             self.df.to_csv('cleaned_data.csv', index=False)
             logging.info('Validation and storage completed.')
