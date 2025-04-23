@@ -1,6 +1,7 @@
 import random
 import string
 import datetime
+from datetime import timezone
 
 import pytest
 from werkzeug.security import generate_password_hash
@@ -35,7 +36,7 @@ def test_register_valid_data(client):
     })
     assert response.status_code == 302
     assert response.location == '/register'
-    assert b'Registration successful! Please check your email to verify your account.' in response.data
+    assert b'Registration successful. Please check your email to verify your account.' in response.data
 
     user = User.query.filter_by(username='newuser').first()
     assert user is not None
@@ -97,7 +98,7 @@ def test_register_existing_email(client):
 
 def test_verify_email_valid_token(client, new_user):
     token = ''.join(random.choices(string.ascii_letters + string.digits, k=50))
-    expiration = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+    expiration = datetime.datetime.now(timezone.utc) + datetime.timedelta(hours=1)
     new_token = Token(user_id=new_user.id, token=token, expires_at=expiration)
     db.session.add(new_token)
     db.session.commit()

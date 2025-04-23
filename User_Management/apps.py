@@ -3,17 +3,17 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 from dotenv import load_dotenv
 
 load_dotenv()  # Load environment variables from .env file
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+app.config['SECRET_KEY'] = 'your-secret-key'  # Set a default SECRET_KEY for Flask
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
-app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
-app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT'))
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 app.config['MAIL_USE_TLS'] = True
@@ -23,6 +23,13 @@ db = SQLAlchemy(app)
 mail = Mail(app)
 
 # Models
+# Ensure the user_roles table is defined before referencing it in the User class
+user_roles = db.Table(
+    'user_roles',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.user_id'), primary_key=True),
+    db.Column('role_id', db.Integer, db.ForeignKey('role.role_id'), primary_key=True)
+)
+
 class User(db.Model):
     user_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(20), unique=True, nullable=False)
@@ -31,7 +38,7 @@ class User(db.Model):
     is_verified = db.Column(db.Boolean, default=False)
     failed_login_attempts = db.Column(db.Integer, default=0)
     account_locked_until = db.Column(db.DateTime, nullable=True)
-    roles = db.relationship('Role', secondary='user_roles', backref='users')
+    roles = db.relationship('Role', secondary=user_roles, backref='users')
     reset_tokens = db.relationship('ResetToken', backref='user', lazy=True)
 
 class Role(db.Model):
@@ -56,11 +63,11 @@ class ResetToken(db.Model):
     token_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'), nullable=False)
     token = db.Column(db.String(100), unique=True, nullable=False)
-    expires_at = db.Column(db.DateTime, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc) + timedelta(hours=1))
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 # Create Database
-@app.before_first_request
+@app.before_request
 def create_tables():
     db.create_all()
 
@@ -89,7 +96,8 @@ def register():
             flash('Registration successful. Please check your email to verify your account.')
             return redirect(url_for('login'))
 
-    return render_template('register.html')
+    # Correct the path to the register.html template
+    return render_template('user_registration/templates/register.html')
 
 # User Login
 @app.route('/login', methods=['GET', 'POST'])
@@ -153,7 +161,7 @@ def forgot_password():
 
         if user:
             token = secrets.token_urlsafe(32)
-            expires_at = datetime.utcnow() + timedelta(minutes=30)
+            expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
             reset_token = ResetToken(user_id=user.user_id, token=token, expires_at=expires_at)
             db.session.add(reset_token)
             db.session.commit()
@@ -172,7 +180,7 @@ def forgot_password():
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     reset_token = ResetToken.query.filter_by(token=token).first()
-    if reset_token and reset_token.expires_at > datetime.utcnow():
+    if reset_token and reset_token.expires_at > datetime.now(timezone.utc):
         if request.method == 'POST':
             password = request.form['password']
             password_confirm = request.form['password_confirm']

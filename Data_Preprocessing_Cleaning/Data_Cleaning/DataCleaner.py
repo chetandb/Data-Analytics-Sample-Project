@@ -20,9 +20,9 @@ class DataCleaner:
         elif strategy in ['mean', 'median', 'mode']:
             for column in self.df.select_dtypes(include=[np.number]).columns:
                 if strategy == 'mean':
-                    self.df[column].fillna(self.df[column].mean(), inplace=True)
+                    self.df[column] = self.df[column].fillna(self.df[column].mean())
                 elif strategy == 'median':
-                    self.df[column].fillna(self.df[column].median(), inplace=True)
+                    self.df[column] = self.df[column].fillna(self.df[column].median())
                 elif strategy == 'mode':
                     self.df[column].fillna(self.df[column].mode()[0], inplace=True)
         elif method in ['ffill', 'bfill']:
