@@ -42,7 +42,8 @@ def test_token_creation(client, new_user):
     retrieved_token = Token.query.filter_by(token=token_str).first()
     assert retrieved_token is not None
     assert retrieved_token.user_id == new_user.id
-    assert retrieved_token.expires_at == expiration
+    # Compare datetimes ignoring tzinfo
+    assert retrieved_token.expires_at.replace(tzinfo=None) == expiration.replace(tzinfo=None)
 
 def test_user_token_relationship(client, new_user):
     token_str = 'testtoken1234567890'

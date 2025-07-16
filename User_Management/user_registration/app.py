@@ -63,10 +63,9 @@ def register():
         verification_link = url_for('verify_email', token=token, _external=True)
         msg = Message('Email Verification', recipients=[email])
         msg.body = f'Please click the following link to verify your email: {verification_link}'
-    # Suppress email sending in test mode
-    if not app.config.get('TESTING', False):
-        mail.send(msg)
-
+        # Suppress email sending in test mode
+        if not app.config.get('TESTING', False):
+            mail.send(msg)
         flash('Registration successful! Please check your email to verify your account.')
         return redirect(url_for('register'))
 
