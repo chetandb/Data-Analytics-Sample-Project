@@ -18,6 +18,9 @@ app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USE_SSL'] = False
+app.config['MAIL_DEFAULT_SENDER'] = 'noreply@example.com'
+if app.config.get('TESTING'):
+    app.config['MAIL_SUPPRESS_SEND'] = True
 
 db = SQLAlchemy(app)
 mail = Mail(app)
@@ -84,20 +87,23 @@ def register():
 
         if password != password_confirm:
             flash('Passwords do not match.')
+            return redirect(url_for('register'))
         elif len(password) < 8 or not any(c.isupper() for c in password) or not any(c.islower() for c in password) or not any(c.isdigit() for c in password) or not any(c in "!@#$%^&*()_+" for c in password):
             flash('Password does not meet complexity requirements.')
+            return redirect(url_for('register'))
         elif User.query.filter_by(email=email).first() or User.query.filter_by(username=username).first():
             flash('Email or Username already exists.')
+            return redirect(url_for('register'))
         else:
             hashed_password = generate_password_hash(password)
             new_user = User(username=username, email=email, password_hash=hashed_password)
             db.session.add(new_user)
             db.session.commit()
             flash('Registration successful. Please check your email to verify your account.')
-            return redirect(url_for('login'))
+            return redirect(url_for('register'))
 
     # Correct the path to the register.html template
-    return render_template('user_registration/templates/register.html')
+    return render_template('register.html')
 
 # User Login
 @app.route('/login', methods=['GET', 'POST'])
@@ -114,8 +120,10 @@ def login():
                 return redirect(url_for('dashboard'))
             else:
                 flash('Account not verified.')
+                return redirect(url_for('login'))
         else:
             flash('Invalid username/email or password.')
+            return redirect(url_for('login'))
 
     return render_template('login.html')
 
@@ -169,7 +177,9 @@ def forgot_password():
             reset_link = url_for('reset_password', token=token, _external=True)
             msg = Message('Password Reset Request', sender=os.getenv('MAIL_USERNAME'), recipients=[email])
             msg.body = f'Click the link to reset your password: {reset_link}'
-            mail.send(msg)
+            # Suppress email sending in test mode
+            if not app.config.get('TESTING', False):
+                mail.send(msg)
             flash('Password reset link sent to your email address.')
             return redirect(url_for('forgot_password'))
         else:
@@ -180,31 +190,37 @@ def forgot_password():
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     reset_token = ResetToken.query.filter_by(token=token).first()
-    if reset_token and reset_token.expires_at > datetime.now(timezone.utc):
-        if request.method == 'POST':
-            password = request.form['password']
-            password_confirm = request.form['password_confirm']
-            if password != password_confirm:
-                flash('Passwords do not match.')
-            elif len(password) < 8 or not any(c.isupper() for c in password) or not any(c.islower() for c in password) or not any(c.isdigit() for c in password) or not any(c in "!@#$%^&*()_+" for c in password):
-                flash('Password does not meet complexity requirements.')
-            else:
-                user = User.query.get(reset_token.user_id)
-                user.password_hash = generate_password_hash(password)
-                db.session.commit()
-                db.session.delete(reset_token)
-                db.session.commit()
-                flash('Password has been updated successfully.')
-                return redirect(url_for('login'))
-
-        return render_template('reset_password.html', token=token)
-    else:
+    # Always use timezone-aware UTC for comparison
+    now_utc = datetime.now(timezone.utc)
+    if not reset_token:
         flash('Reset link is invalid or expired.')
         return redirect(url_for('forgot_password'))
+    expires_at = reset_token.expires_at
+    if expires_at and expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at <= now_utc:
+        flash('Reset link is invalid or expired.')
+        return redirect(url_for('forgot_password'))
+    if request.method == 'POST':
+        password = request.form['password']
+        password_confirm = request.form['password_confirm']
+        if password != password_confirm:
+            flash('Passwords do not match.')
+        elif len(password) < 8 or not any(c.isupper() for c in password) or not any(c.islower() for c in password) or not any(c.isdigit() for c in password) or not any(c in "!@#$%^&*()_+" for c in password):
+            flash('Password does not meet complexity requirements.')
+        else:
+            user = User.query.get(reset_token.user_id)
+            user.password_hash = generate_password_hash(password)
+            db.session.commit()
+            db.session.delete(reset_token)
+            db.session.commit()
+            flash('Password has been updated successfully.')
+            return redirect(url_for('login'))
+    return render_template('reset_password.html', token=token)
 
 @app.route('/dashboard')
 def dashboard():
-    return 'Dashboard (Implement your dashboard here)'
+    return render_template('dashboard.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

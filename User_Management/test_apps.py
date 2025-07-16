@@ -32,8 +32,9 @@ def test_register(client):
         'email': 'newuser@example.com',
         'password': 'Password1!',
         'password_confirm': 'Password1!'
-    })
-    assert response.status_code == 302  # Redirects on successful registration
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Registration successful! Please check your email to verify your account.' in response.data
     assert User.query.filter_by(username='newuser').first() is not None
 
 def test_register_password_mismatch(client):
@@ -42,22 +43,25 @@ def test_register_password_mismatch(client):
         'email': 'newuser@example.com',
         'password': 'Password1!',
         'password_confirm': 'DifferentPassword1!'
-    })
+    }, follow_redirects=True)
+    assert response.status_code == 200
     assert b'Passwords do not match.' in response.data
 
 def test_login_success(client, sample_user):
     response = client.post('/login', data={
         'username_or_email': 'testuser',
         'password': 'TestPassword123!'
-    })
-    assert response.status_code == 302  # Redirects on successful login
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Login successful!' in response.data
     assert b'Login successful.' in response.data
 
 def test_login_failure(client):
     response = client.post('/login', data={
         'username_or_email': 'testuser',
         'password': 'WrongPassword'
-    })
+    }, follow_redirects=True)
+    assert response.status_code == 200
     assert b'Invalid username/email or password.' in response.data
 
 def test_manage_roles(client):
@@ -106,4 +110,5 @@ def test_reset_password_invalid_token(client):
         'password': 'NewPassword1!',
         'password_confirm': 'NewPassword1!'
     })
+    assert response.status_code == 200
     assert b'Reset link is invalid or expired.' in response.data

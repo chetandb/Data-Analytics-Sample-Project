@@ -34,7 +34,15 @@ def test_register_valid_data(client):
         'password': 'NewPassword1!',
         'email': 'newuser@example.com'
     })
-    assert response.status_code == 302
+    assert response.status_code == 200
+    assert b'Registration successful! Please check your email to verify your account.' in response.data
+    assert response.location == '/register'
+    assert b'Registration successful. Please check your email to verify your account.' in response.data
+    user = User.query.filter_by(username='newuser').first()
+    assert user is not None
+    assert user.is_verified is False
+    token = Token.query.filter_by(user_id=user.id).first()
+    assert token is not None
     assert response.location == '/register'
     assert b'Registration successful. Please check your email to verify your account.' in response.data
 
@@ -50,7 +58,8 @@ def test_register_invalid_username(client):
         'password': 'ValidPassword1!',
         'email': 'valid@example.com'
     })
-    assert response.status_code == 302
+    assert response.status_code == 200
+    assert b'Invalid username. Must be 3-20 characters and can include alphanumeric characters, underscores, and periods.' in response.data
     assert response.location == '/register'
     assert b'Invalid username. Must be 3-20 characters and can include alphanumeric characters, underscores, and periods.' in response.data
 
@@ -60,7 +69,8 @@ def test_register_invalid_email(client):
         'password': 'ValidPassword1!',
         'email': 'invalid-email'  # Invalid email
     })
-    assert response.status_code == 302
+    assert response.status_code == 200
+    assert b'Invalid email address.' in response.data
     assert response.location == '/register'
     assert b'Invalid email address.' in response.data
 
@@ -76,7 +86,8 @@ def test_register_existing_username(client):
         'password': 'AnotherPassword1!',
         'email': 'newemail@example.com'
     })
-    assert response.status_code == 302
+    assert response.status_code == 200
+    assert b'Username already exists.' in response.data
     assert response.location == '/register'
     assert b'Username already exists.' in response.data
 
@@ -92,7 +103,8 @@ def test_register_existing_email(client):
         'password': 'AnotherPassword1!',
         'email': 'duplicate@example.com'
     })
-    assert response.status_code == 302
+    assert response.status_code == 200
+    assert b'Email already registered.' in response.data
     assert response.location == '/register'
     assert b'Email already registered.' in response.data
 
@@ -104,7 +116,12 @@ def test_verify_email_valid_token(client, new_user):
     db.session.commit()
 
     response = client.get(f'/verify/{token}')
-    assert response.status_code == 302
+    assert response.status_code == 200
+    assert b'Email verified successfully! You can now log in.' in response.data
+    user = User.query.get(new_user.id)
+    assert user.is_verified is True
+    token_record = Token.query.filter_by(token=token).first()
+    assert token_record is None
     assert response.location == '/register'
     assert b'Email verified successfully! You can now log in.' in response.data
 
@@ -115,6 +132,7 @@ def test_verify_email_valid_token(client, new_user):
 
 def test_verify_email_invalid_token(client):
     response = client.get('/verify/invalidtoken')
-    assert response.status_code == 302
+    assert response.status_code == 200
+    assert b'Invalid or expired token.' in response.data
     assert response.location == '/register'
     assert b'Invalid or expired token.' in response.data

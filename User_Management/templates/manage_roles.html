@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Roles</title>
+</head>
+<body>
+    <h2>Manage Roles</h2>
+    <form method="post">
+        <label for="role_name">Role Name:</label>
+        <input type="text" id="role_name" name="role_name" required><br>
+        <label for="description">Description:</label>
+        <input type="text" id="description" name="description"><br>
+        <button type="submit">Add Role</button>
+    </form>
+    <h3>Existing Roles</h3>
+    {% if roles %}
+        <ul>
+        {% for role in roles %}
+            <li>{{ role.name }} - {{ role.description }}</li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No roles found.</p>
+    {% endif %}
+</body>
+</html>

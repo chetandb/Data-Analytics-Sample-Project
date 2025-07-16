@@ -10,6 +10,7 @@ from werkzeug.security import generate_password_hash
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
+app.config['MAIL_DEFAULT_SENDER'] = 'noreply@example.com'
 from db import db
 db.init_app(app)
 mail = Mail(app)
@@ -53,7 +54,8 @@ def register():
         db.session.commit()
 
         token = ''.join(random.choices(string.ascii_letters + string.digits, k=50))
-        expiration = datetime.utcnow() + timedelta(hours=1)
+        from datetime import timezone
+        expiration = datetime.now(timezone.utc) + timedelta(hours=1)
         new_token = Token(user_id=new_user.id, token=token, expires_at=expiration)
         db.session.add(new_token)
         db.session.commit()
@@ -61,6 +63,8 @@ def register():
         verification_link = url_for('verify_email', token=token, _external=True)
         msg = Message('Email Verification', recipients=[email])
         msg.body = f'Please click the following link to verify your email: {verification_link}'
+    # Suppress email sending in test mode
+    if not app.config.get('TESTING', False):
         mail.send(msg)
 
         flash('Registration successful! Please check your email to verify your account.')
