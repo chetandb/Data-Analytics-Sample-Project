@@ -2,7 +2,7 @@ import pytest
 from app import db, app
 from models import User, Token
 from werkzeug.security import generate_password_hash
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 @pytest.fixture
 def client():
@@ -34,7 +34,7 @@ def test_user_creation(client):
 
 def test_token_creation(client, new_user):
     token_str = 'testtoken1234567890'
-    expiration = datetime.utcnow() + timedelta(hours=1)
+    expiration = datetime.now(timezone.utc) + timedelta(hours=1)
     token = Token(user_id=new_user.id, token=token_str, expires_at=expiration)
     db.session.add(token)
     db.session.commit()
@@ -46,7 +46,7 @@ def test_token_creation(client, new_user):
 
 def test_user_token_relationship(client, new_user):
     token_str = 'testtoken1234567890'
-    expiration = datetime.utcnow() + timedelta(hours=1)
+    expiration = datetime.now(timezone.utc) + timedelta(hours=1)
     token = Token(user_id=new_user.id, token=token_str, expires_at=expiration)
     db.session.add(token)
     db.session.commit()
@@ -69,7 +69,7 @@ def test_user_unique_constraints(client):
 
 def test_token_unique_constraints(client, new_user):
     token_str = 'uniquetoken123'
-    expiration = datetime.utcnow() + timedelta(hours=1)
+    expiration = datetime.now(timezone.utc) + timedelta(hours=1)
     token1 = Token(user_id=new_user.id, token=token_str, expires_at=expiration)
     db.session.add(token1)
     db.session.commit()
@@ -90,7 +90,7 @@ def test_user_timestamps(client):
     assert user.updated_at is not None
 
 def test_token_timestamps(client, new_user):
-    expiration = datetime.utcnow() + timedelta(hours=1)
+    expiration = datetime.now(timezone.utc) + timedelta(hours=1)
     token = Token(user_id=new_user.id, token='timestampToken123', expires_at=expiration)
     db.session.add(token)
     db.session.commit()

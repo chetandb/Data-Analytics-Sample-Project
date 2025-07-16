@@ -3,15 +3,19 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.edge.service import Service as EdgeService
+from selenium.webdriver.edge.options import Options as EdgeOptions
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
 
 class UserAuthTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
-        cls.driver.get("http://your-web-application-url.com")  # Replace with your application URL
+        edge_options = EdgeOptions()
+        edge_options.binary_location = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"  # Replace with the correct path
+        cls.driver = webdriver.Edge(service=EdgeService(EdgeChromiumDriverManager().install()), options=edge_options)
+        cls.driver.get("http://127.0.0.1:5000")  # Replace with the correct URL and port
 
     @classmethod
     def tearDownClass(cls):
@@ -25,7 +29,7 @@ class UserAuthTests(unittest.TestCase):
 
     def test_valid_user_registration(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/register")  # Registration URL
+        driver.get("http://localhost:8000/register")  # Registration URL
         driver.find_element(By.NAME, "username").send_keys("validuser")
         driver.find_element(By.NAME, "email").send_keys("validuser@example.com")
         driver.find_element(By.NAME, "password").send_keys("StrongPassword123")
@@ -37,7 +41,7 @@ class UserAuthTests(unittest.TestCase):
 
     def test_password_mismatch(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/register")
+        driver.get("http://localhost:8000/register")
         driver.find_element(By.NAME, "username").send_keys("user1")
         driver.find_element(By.NAME, "email").send_keys("user1@example.com")
         driver.find_element(By.NAME, "password").send_keys("password123")
@@ -49,7 +53,7 @@ class UserAuthTests(unittest.TestCase):
 
     def test_weak_password(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/register")
+        driver.get("http://localhost:8000/register")
         driver.find_element(By.NAME, "username").send_keys("user2")
         driver.find_element(By.NAME, "email").send_keys("user2@example.com")
         driver.find_element(By.NAME, "password").send_keys("12345")
@@ -61,7 +65,7 @@ class UserAuthTests(unittest.TestCase):
 
     def test_duplicate_username_email(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/register")
+        driver.get("http://localhost:8000/register")
         driver.find_element(By.NAME, "username").send_keys("existinguser")
         driver.find_element(By.NAME, "email").send_keys("existinguser@example.com")
         driver.find_element(By.NAME, "password").send_keys("ValidPassword123")
@@ -73,13 +77,13 @@ class UserAuthTests(unittest.TestCase):
 
     def test_verification_link_expired(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/verify?token=expired_token")  # Use an expired token
+        driver.get("http://localhost:8000/verify?token=expired_token")  # Use an expired token
         error_message = self.wait.until(EC.presence_of_element_located((By.ID, "error-message")))
         self.assertIn("Verification link has expired", error_message.text)
 
     def test_resend_verification_email(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/resend-verification")
+        driver.get("http://localhost:8000/resend-verification")
         driver.find_element(By.NAME, "email").send_keys("user@example.com")
         driver.find_element(By.NAME, "submit").click()
 
@@ -88,7 +92,7 @@ class UserAuthTests(unittest.TestCase):
 
     def test_clear_instructions_error_messages(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/register")
+        driver.get("http://localhost:8000/register")
         username_field = driver.find_element(By.NAME, "username")
         email_field = driver.find_element(By.NAME, "email")
         password_field = driver.find_element(By.NAME, "password")
@@ -101,7 +105,7 @@ class UserAuthTests(unittest.TestCase):
 
     def test_valid_user_login(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/login")
+        driver.get("http://localhost:8000/login")
         driver.find_element(By.NAME, "username").send_keys("validuser")
         driver.find_element(By.NAME, "password").send_keys("ValidPassword123")
         driver.find_element(By.NAME, "submit").click()
@@ -111,7 +115,7 @@ class UserAuthTests(unittest.TestCase):
 
     def test_invalid_username_email_format(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/login")
+        driver.get("http://localhost:8000/login")
         driver.find_element(By.NAME, "username").send_keys("invalid email format")
         driver.find_element(By.NAME, "password").send_keys("password123")
         driver.find_element(By.NAME, "submit").click()
@@ -121,7 +125,7 @@ class UserAuthTests(unittest.TestCase):
 
     def test_authentication_failure(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/login")
+        driver.get("http://localhost:8000/login")
         driver.find_element(By.NAME, "username").send_keys("nonexistentuser")
         driver.find_element(By.NAME, "password").send_keys("wrongpassword")
         driver.find_element(By.NAME, "submit").click()
@@ -131,7 +135,7 @@ class UserAuthTests(unittest.TestCase):
 
     def test_account_locked(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/login")
+        driver.get("http://localhost:8000/login")
         driver.find_element(By.NAME, "username").send_keys("lockeduser")
         driver.find_element(By.NAME, "password").send_keys("validpassword")
         driver.find_element(By.NAME, "submit").click()
@@ -141,7 +145,7 @@ class UserAuthTests(unittest.TestCase):
 
     def test_forgot_password(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/forgot-password")
+        driver.get("http://localhost:8000/forgot-password")
         driver.find_element(By.NAME, "email").send_keys("user@example.com")
         driver.find_element(By.NAME, "submit").click()
 
@@ -150,7 +154,7 @@ class UserAuthTests(unittest.TestCase):
 
     def test_create_new_role(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/admin/roles")
+        driver.get("http://localhost:8000/admin/roles")
         driver.find_element(By.NAME, "role_name").send_keys("newrole")
         driver.find_element(By.NAME, "submit").click()
 
@@ -159,7 +163,7 @@ class UserAuthTests(unittest.TestCase):
 
     def test_assign_permissions_to_role(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/admin/roles")
+        driver.get("http://localhost:8000/admin/roles")
         driver.find_element(By.NAME, "role_name").send_keys("rolewithpermissions")
         driver.find_element(By.NAME, "permissions").send_keys("read, write")
         driver.find_element(By.NAME, "submit").click()
@@ -169,7 +173,7 @@ class UserAuthTests(unittest.TestCase):
 
     def test_assign_role_to_user(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/admin/users")
+        driver.get("http://localhost:8000/admin/users")
         driver.find_element(By.NAME, "username").send_keys("existinguser")
         driver.find_element(By.NAME, "role").send_keys("newrole")
         driver.find_element(By.NAME, "submit").click()
@@ -179,7 +183,7 @@ class UserAuthTests(unittest.TestCase):
 
     def test_invalid_role_input(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/admin/roles")
+        driver.get("http://localhost:8000/admin/roles")
         driver.find_element(By.NAME, "role_name").send_keys("")
         driver.find_element(By.NAME, "submit").click()
 
@@ -188,7 +192,7 @@ class UserAuthTests(unittest.TestCase):
 
     def test_unauthorized_role_management(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/admin/roles")
+        driver.get("http://localhost:8000/admin/roles")
         driver.find_element(By.NAME, "role_name").send_keys("adminrole")
         driver.find_element(By.NAME, "submit").click()
 
@@ -197,7 +201,7 @@ class UserAuthTests(unittest.TestCase):
 
     def test_request_password_reset(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/forgot-password")
+        driver.get("http://localhost:8000/forgot-password")
         driver.find_element(By.NAME, "email").send_keys("user@example.com")
         driver.find_element(By.NAME, "submit").click()
 
@@ -206,7 +210,7 @@ class UserAuthTests(unittest.TestCase):
 
     def test_reset_password_with_valid_token(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/reset-password?token=valid_token")  # Use a valid token
+        driver.get("http://localhost:8000/reset-password?token=valid_token")  # Use a valid token
         driver.find_element(By.NAME, "new_password").send_keys("NewPassword123")
         driver.find_element(By.NAME, "confirm_password").send_keys("NewPassword123")
         driver.find_element(By.NAME, "submit").click()
@@ -216,7 +220,7 @@ class UserAuthTests(unittest.TestCase):
 
     def test_invalid_email_address(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/forgot-password")
+        driver.get("http://localhost:8000/forgot-password")
         driver.find_element(By.NAME, "email").send_keys("invalidemail")
         driver.find_element(By.NAME, "submit").click()
 
@@ -225,13 +229,13 @@ class UserAuthTests(unittest.TestCase):
 
     def test_expired_token(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/reset-password?token=expired_token")  # Use an expired token
+        driver.get("http://localhost:8000/reset-password?token=expired_token")  # Use an expired token
         error_message = self.wait.until(EC.presence_of_element_located((By.ID, "error-message")))
         self.assertIn("Token has expired", error_message.text)
 
     def test_mismatched_passwords(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/reset-password?token=valid_token")  # Use a valid token
+        driver.get("http://localhost:8000/reset-password?token=valid_token")  # Use a valid token
         driver.find_element(By.NAME, "new_password").send_keys("NewPassword123")
         driver.find_element(By.NAME, "confirm_password").send_keys("DifferentPassword123")
         driver.find_element(By.NAME, "submit").click()
@@ -241,13 +245,13 @@ class UserAuthTests(unittest.TestCase):
 
     def test_unauthorized_token_use(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/reset-password?token=invalid_token")  # Use an invalid token
+        driver.get("http://localhost:8000/reset-password?token=invalid_token")  # Use an invalid token
         error_message = self.wait.until(EC.presence_of_element_located((By.ID, "error-message")))
         self.assertIn("Unauthorized token use", error_message.text)
 
     def test_error_handling(self):
         driver = self.driver
-        driver.get("http://your-web-application-url.com/error-prone-page")  # Simulate error-prone action
+        driver.get("http://localhost:8000/error-prone-page")  # Simulate error-prone action
         driver.find_element(By.NAME, "trigger_error").click()
 
         error_message = self.wait.until(EC.presence_of_element_located((By.ID, "error-message")))
