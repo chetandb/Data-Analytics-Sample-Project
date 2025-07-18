@@ -99,7 +99,7 @@ def register():
             new_user = User(username=username, email=email, password_hash=hashed_password)
             db.session.add(new_user)
             db.session.commit()
-            flash('Registration successful! Please check your email to verify your account.')
+            flash('Registration successful. Please check your email to verify your account.')
             return redirect(url_for('login'))
 
     # Correct the path to the register.html template
@@ -116,7 +116,7 @@ def login():
         if user and check_password_hash(user.password_hash, password):
             if user.is_verified:
                 session['user_id'] = user.user_id
-                flash('Login successful!')
+                flash('Login successful.')
                 return redirect(url_for('dashboard'))
             else:
                 flash('Account not verified.')
@@ -220,7 +220,7 @@ def reset_password(token):
 
 @app.route('/dashboard')
 def dashboard():
-    return render_template('dashboard.html')
+    return 'Dashboard (Implement your dashboard here)'
 
 if __name__ == '__main__':
     app.run(debug=True)
