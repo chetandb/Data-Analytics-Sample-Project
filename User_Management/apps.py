@@ -209,7 +209,7 @@ def reset_password(token):
         elif len(password) < 8 or not any(c.isupper() for c in password) or not any(c.islower() for c in password) or not any(c.isdigit() for c in password) or not any(c in "!@#$%^&*()_+" for c in password):
             flash('Password does not meet complexity requirements.')
         else:
-            user = User.query.get(reset_token.user_id)
+            user = db.session.get(User, reset_token.user_id)
             user.password_hash = generate_password_hash(password)
             db.session.commit()
             db.session.delete(reset_token)

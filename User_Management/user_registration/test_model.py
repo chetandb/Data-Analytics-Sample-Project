@@ -42,7 +42,11 @@ def test_token_creation(client, new_user):
     retrieved_token = Token.query.filter_by(token=token_str).first()
     assert retrieved_token is not None
     assert retrieved_token.user_id == new_user.id
-    assert retrieved_token.expires_at == expiration
+    # Convert naive datetime to timezone-aware for comparison
+    retrieved_expires_at = retrieved_token.expires_at
+    if retrieved_expires_at.tzinfo is None:
+        retrieved_expires_at = retrieved_expires_at.replace(tzinfo=timezone.utc)
+    assert retrieved_expires_at == expiration
 
 def test_user_token_relationship(client, new_user):
     token_str = 'testtoken1234567890'
@@ -51,7 +55,7 @@ def test_user_token_relationship(client, new_user):
     db.session.add(token)
     db.session.commit()
 
-    user = User.query.get(new_user.id)
+    user = db.session.get(User, new_user.id)
     assert len(user.tokens) == 1
     assert user.tokens[0].token == token_str
 

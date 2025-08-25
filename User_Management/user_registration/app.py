@@ -63,9 +63,9 @@ def register():
         verification_link = url_for('verify_email', token=token, _external=True)
         msg = Message('Email Verification', recipients=[email])
         msg.body = f'Please click the following link to verify your email: {verification_link}'
-    # Suppress email sending in test mode
-    if not app.config.get('TESTING', False):
-        mail.send(msg)
+        # Suppress email sending in test mode
+        if not app.config.get('TESTING', False):
+            mail.send(msg)
 
         flash('Registration successful! Please check your email to verify your account.')
         return redirect(url_for('register'))
@@ -74,12 +74,22 @@ def register():
 
 @app.route('/verify/<token>')
 def verify_email(token):
+    from datetime import timezone
     token_record = Token.query.filter_by(token=token).first()
-    if not token_record or token_record.expires_at < datetime.utcnow():
+    if not token_record:
+        flash('Invalid or expired token.')
+        return redirect(url_for('register'))
+    
+    # Handle timezone comparison properly
+    expires_at = token_record.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    
+    if expires_at < datetime.now(timezone.utc):
         flash('Invalid or expired token.')
         return redirect(url_for('register'))
 
-    user = User.query.get(token_record.user_id)
+    user = db.session.get(User, token_record.user_id)
     user.is_verified = True
     db.session.commit()
 
