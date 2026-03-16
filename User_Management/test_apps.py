@@ -2,7 +2,7 @@ import pytest
 from apps import app, db, User, Role, UserRole, ResetToken
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_mail import Mail, Message
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import secrets
 import os
 
@@ -92,7 +92,7 @@ def test_forgot_password(client, sample_user):
 
 def test_reset_password(client, sample_user):
     token = secrets.token_urlsafe(32)
-    expires_at = datetime.utcnow() + timedelta(minutes=30)
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
     reset_token = ResetToken(user_id=sample_user.user_id, token=token, expires_at=expires_at)
     db.session.add(reset_token)
     db.session.commit()
