@@ -32,7 +32,7 @@ class DataPipeline:
                     self.df[column] = pd.to_numeric(self.df[column], errors='coerce').astype('Int64')
                 elif 'float' in dtype:
                     self.df[column] = pd.to_numeric(self.df[column], errors='coerce')
-            self.df.drop_duplicates(subset=self.duplicate_criteria, inplace=True)
+            self.df = self.df.drop_duplicates(subset=self.duplicate_criteria)
             logging.info('Data cleaning completed.')
         except Exception as e:
             logging.error(f'Data cleaning failed: {e}')
@@ -72,10 +72,11 @@ class DataPipeline:
         """
         try:
             logging.info('Batch processing started.')
-            chunks = np.array_split(self.df, n_chunks)
+            chunks = [self.df.iloc[i::n_chunks].copy() for i in range(n_chunks)]
             with ProcessPoolExecutor() as executor:
                 results = list(executor.map(self.process_chunk, chunks))
-            self.df = pd.concat(results)
+            self.df = pd.concat(results, ignore_index=True)
+            # Deduplication already done in data_cleaning
             logging.info('Batch processing completed.')
         except Exception as e:
             logging.error(f'Batch processing failed: {e}')
@@ -88,8 +89,7 @@ class DataPipeline:
         :param chunk: A chunk of the dataset to process.
         :return: Processed chunk.
         """
-        chunk = chunk.ffill()
-        chunk.drop_duplicates(inplace=True)
+        # Cleaning already done in data_cleaning
         return chunk
 
     def run_pipeline(self, n_chunks: int = 4):

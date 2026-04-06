@@ -3,17 +3,25 @@ import re
 import string
 from datetime import datetime, timedelta
 import secrets
+import logging
 
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_mail import Mail, Message
+from flask_migrate import Migrate
 import flask_sqlalchemy
 from werkzeug.security import generate_password_hash
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
 app.config['MAIL_DEFAULT_SENDER'] = 'noreply@example.com'
+
+# Configure security audit logging
+logging.basicConfig(filename='security_audit.log', level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+
 from db import db
 db.init_app(app)
+migrate = Migrate(app, db)
 mail = Mail(app)
 
 # Models
@@ -55,6 +63,7 @@ def register():
         db.session.commit()
 
         token = secrets.token_urlsafe(32)
+        logging.info(f'Security Audit: Token generated for user {new_user.id} ({email})')
         from datetime import timezone
         expiration = datetime.now(timezone.utc) + timedelta(hours=1)
         new_token = Token(user_id=new_user.id, token=token, expires_at=expiration)
@@ -78,6 +87,7 @@ def verify_email(token):
     from datetime import timezone
     token_record = Token.query.filter_by(token=token).first()
     if not token_record:
+        logging.warning(f'Security Audit: Token verification failed - token not found: {token[:10]}...')
         flash('Invalid or expired token.')
         return redirect(url_for('register'))
     
@@ -87,6 +97,7 @@ def verify_email(token):
         expires_at = expires_at.replace(tzinfo=timezone.utc)
     
     if expires_at < datetime.now(timezone.utc):
+        logging.warning(f'Security Audit: Token verification failed - token expired for user {token_record.user_id}')
         flash('Invalid or expired token.')
         return redirect(url_for('register'))
 
@@ -94,6 +105,7 @@ def verify_email(token):
     user.is_verified = True
     db.session.commit()
 
+    logging.info(f'Security Audit: Email verification successful for user {user.id} ({user.email})')
     db.session.delete(token_record)
     db.session.commit()
 

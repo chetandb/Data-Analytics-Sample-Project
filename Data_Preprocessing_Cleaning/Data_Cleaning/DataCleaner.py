@@ -14,9 +14,9 @@ class DataCleaner:
         """
         if strategy == 'remove':
             if threshold:
-                self.df.dropna(thresh=threshold, axis=0, inplace=True)
+                self.df = self.df.dropna(thresh=threshold, axis=0)
             else:
-                self.df.dropna(inplace=True)
+                self.df = self.df.dropna()
         elif strategy in ['mean', 'median', 'mode']:
             for column in self.df.select_dtypes(include=[np.number]).columns:
                 if strategy == 'mean':
