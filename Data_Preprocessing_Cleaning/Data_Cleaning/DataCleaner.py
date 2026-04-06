@@ -26,7 +26,10 @@ class DataCleaner:
                 elif strategy == 'mode':
                     self.df[column].fillna(self.df[column].mode()[0], inplace=True)
         elif method in ['ffill', 'bfill']:
-            self.df.fillna(method=method, inplace=True)
+            if method == 'ffill':
+                self.df = self.df.ffill()
+            elif method == 'bfill':
+                self.df = self.df.bfill()
         else:
             raise ValueError(f"Unsupported strategy or method: {strategy}, {method}")
 

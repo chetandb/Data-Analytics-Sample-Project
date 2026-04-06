@@ -24,7 +24,7 @@ class DataPipeline:
     def data_cleaning(self):
         try:
             logging.info('Data cleaning started.')
-            self.df.fillna(method='ffill', inplace=True)  # Forward fill missing values
+            self.df = self.df.ffill()  # Forward fill missing values
             for column, dtype in self.schema.items():
                 if 'datetime' in dtype:
                     self.df[column] = pd.to_datetime(self.df[column], errors='coerce')
@@ -88,7 +88,7 @@ class DataPipeline:
         :param chunk: A chunk of the dataset to process.
         :return: Processed chunk.
         """
-        chunk.fillna(method='ffill', inplace=True)
+        chunk = chunk.ffill()
         chunk.drop_duplicates(inplace=True)
         return chunk
 

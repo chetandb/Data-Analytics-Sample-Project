@@ -2,6 +2,7 @@ import random
 import re
 import string
 from datetime import datetime, timedelta
+import secrets
 
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_mail import Mail, Message
@@ -53,7 +54,7 @@ def register():
         db.session.add(new_user)
         db.session.commit()
 
-        token = ''.join(random.choices(string.ascii_letters + string.digits, k=50))
+        token = secrets.token_urlsafe(32)
         from datetime import timezone
         expiration = datetime.now(timezone.utc) + timedelta(hours=1)
         new_token = Token(user_id=new_user.id, token=token, expires_at=expiration)
